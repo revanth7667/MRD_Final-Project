@@ -1,0 +1,497 @@
+---
+title: "Final Report-Draft-Logistic Regression"
+author: Suim Park
+editor: visual
+format: 
+  pdf:
+   standalone: false
+   echo: false
+   message: false
+   warning: false
+   include: false
+   geometry:
+     - top=11mm
+     - left=11mm
+     - right=11mm
+---
+
+```{r, message=FALSE, warning=FALSE}
+#Installing required Packages
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(geosphere)
+library(corrplot)
+library(lubridate)
+library(maps)
+library(leaflet)
+library(pROC)
+library(caret)
+library(ggmap)
+library(car)
+```
+
+```{r}
+df <- read.csv('/Users/suimp/OneDrive/Desktop/Duke University/Class/2023-Fall/IDS 702 Modeling and Representation of Data/Team Project/Crime_Data_from_2020_to_Present.csv')
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+#Load Precinct Data
+df_precinct <- read.csv('/Users/suimp/OneDrive/Desktop/Duke University/Class/2023-Fall/IDS 702 Modeling and Representation of Data/Team Project/LAPD Precinct Geocodes.csv')
+```
+
+```{r}
+str(df_precinct)
+```
+
+```{r}
+#Calculate Distance to Precinct in Miles
+df <- df %>% left_join( df_precinct[,c("precinct","lat","long")], 
+        by=c('AREA.NAME'='precinct'))
+```
+
+```{r}
+df$dist_to_precinct <- distHaversine(df[,c("LON","LAT")],df[,c("long","lat")])*0.00062137
+```
+
+```{r}
+#create text column for crime_type
+df$crime_type <- as.factor(ifelse(df$Part.1.2==1,"serious","non-serious"))
+```
+
+```{r}
+#clean time 
+df$time_hr <- as.integer(substr(str_pad(as.character(df$TIME.OCC),4,pad=0),1,2))
+```
+
+```{r}
+df$weapons_binary <- ifelse(is.na(df$Weapon.Used.Cd) | (df$Weapon.Used.Cd==""),0,1)
+```
+
+```{r}
+attach(df)
+```
+
+```{r}
+colSums(is.na(df))
+```
+
+```{r}
+sum(df$LAT == "")
+sum(df$LON == "")
+sum(df$crime_type == "")
+sum(df$time_hr == "")
+sum(df$weapons_binary == "")
+sum(df$Vict.Age == "")
+sum(df$Vict.Sex == "")
+sum(df$Vict.Descent == "")
+```
+
+```{r}
+sum(is.na(df$Weapon.Used.Cd))
+```
+
+```{r}
+df$Vict.Descent[df$Vict.Descent == ""] <- "X"
+df$Vict.Sex[df$Vict.Sex == ""] <- "X"
+```
+
+```{r}
+df$Vict.Descent[df$Vict.Descent == "-"] <- "X"
+df$Vict.Sex[df$Vict.Sex == "-"] <- "X"
+```
+
+```{r}
+colSums(is.na(df))
+```
+
+```{r}
+table(df$Vict.Descent)
+```
+
+```{r}
+table(df$Vict.Sex)
+```
+
+```{r}
+logi_model <- glm(crime_type ~ time_hr + Vict.Age + factor(Vict.Sex) + factor(Vict.Descent) + dist_to_precinct + factor(weapons_binary), family = "binomial", data = df)
+```
+
+```{r}
+summary(logi_model)
+```
+
+```{r}
+exp(coef(logi_model))
+```
+
+```{r}
+# exp(confint(logi_model))
+```
+
+```{r}
+logi_model_1 <- glm(crime_type ~ time_hr + Vict.Age + factor(Vict.Sex) + dist_to_precinct + factor(weapons_binary), family = "binomial", data = df)
+```
+
+```{r}
+logi_model_2 <- glm(crime_type ~ time_hr + Vict.Age + dist_to_precinct + factor(weapons_binary), family = "binomial", data = df)
+```
+
+```{r}
+summary(logi_model_1)
+```
+
+```{r}
+summary(logi_model_2)
+```
+
+```{r}
+logi_interaction <- glm(crime_type ~ time_hr + Vict.Age + factor(Vict.Sex) + factor(Vict.Descent) + factor(Vict.Sex) * factor(Vict.Descent) + dist_to_precinct + factor(weapons_binary), family = "binomial", data = df)
+```
+
+```{r}
+summary(logi_interaction)
+```
+
+```{r}
+deviance_value <- deviance(logi_model)
+deviance_value_1 <- deviance(logi_model_1)
+deviance_value_2 <- deviance(logi_model_2)
+deviance_value
+deviance_value_1
+deviance_value_2
+```
+
+```{r}
+aic_value_base <- AIC(logi_model)
+aic_value_alt_1 <- AIC(logi_model_1)
+aic_value_alt_2 <- AIC(logi_model_2)
+aic_value_base
+aic_value_alt_1
+aic_value_alt_2
+```
+
+```{r}
+null_model <- glm(crime_type ~ 1, data = df, family = binomial)
+null_deviance <- deviance(null_model)
+model_deviance <- deviance(logi_model)
+mcfaddens_pseudo_r2 <- 1 - (model_deviance / null_deviance)
+mcfaddens_pseudo_r2
+```
+
+```{r}
+# roc_plot = roc(factor(df$crime_type), fitted(logi_model))
+# plot(roc_plot, print.thres = "best", plot = TRUE, print.auc = TRUE, main = "ROC Curve")
+```
+
+```{r}
+roc_plot = roc(factor(df$crime_type), fitted(logi_model))
+
+# basic ROC plot
+plot(roc_plot, main = "ROC Curve")
+
+# calculate threshold
+coords <- coords(roc_plot, "best")
+
+# add  threshold and AOC value
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("Threshold:", coords$threshold), pos = 4, cex = 0.8)
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("AUC:", round(auc(roc_plot), 2)), pos = 2, cex = 0.8)
+```
+
+```{r}
+predicted_probabilities <- fitted(logi_model)
+predicted_classes <- ifelse(predicted_probabilities > 0.6032, "1", "0")
+```
+
+```{r}
+crime_type_numeric <- as.numeric(factor(df$crime_type, levels = c("non-serious", "serious"))) - 1
+```
+
+```{r}
+crime_type_factor <- factor(crime_type_numeric, levels = c("0", "1"))
+predicted_factor <- factor(predicted_classes, levels = c("0", "1"))
+```
+
+```{r}
+conf_matrix <- confusionMatrix(predicted_factor, crime_type_factor, positive = "1")
+conf_matrix
+```
+
+```{r}
+california_map <- map_data("county", "california")
+```
+
+```{r}
+# df$crime_count <- table(df$AREA.NAME)
+# df$crime_count <- as.data.frame(crime_count)
+# crime_count
+```
+
+```{r}
+# ggplot() +
+#   geom_polygon(data = california_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+#   geom_point(data = df, aes(x = long, y = lat, size = crime_count, color = crime_count), alpha = 0.5) +
+#   scale_color_gradient(low = "green", high = "red") +
+#   theme_minimal() +
+#   labs(title = "Crime Count by Area in California")
+```
+
+## 1. Introduction
+
+### 1.1 Background
+
+The data used originates from the crime records of the Los Angeles Police Department(LAPD) from 2020 up to present day. The data is created by transcribing original crime reports that are typed on paper and is updated on a `weekly` basis.
+
+The [Dataset](https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8) contains **820,599** **observations**, encompassing **28** **variables** as of the latest update on **18-Oct-2023**.
+
+Each row of the Dataset represents a crime reported in Los Angeles, and contains the following categories of information(with selected examples):
+
+1.  `Location`: Latitude, Longitude, Area, Street, District
+2.  `Victim Demographic`: Age, Gender, Ethnicity
+3.  `Crime Description`: Type of Crime, Investigation Outcomes, Weapon Usage
+4.  `Date and Time`: Date Reported, Date Occurred, Time Occurred
+5.  `Identifier/Classifier`: Crime Record Identifier, Mocodes
+
+### 1.2 Research Questions
+
+We aim to answer the following two questions using the data:
+
+1.  What are the strongest indicating factors that influence the seriousness of crime committed(categorical outcome).
+
+2.  What are the factors which influence the number of crimes committed(continuous outcome).
+
+### 1.3 Why these questions?
+
+Based on the first research question, we aim to confirm the characteristics that are influential factors in crime commission, thereby helping to prevent potential criminals from engaging in such acts. Specifically, through the results of this research question, if we can identify the times and areas where crimes are frequently committed, it will enable people to exercise caution in these places. Measures such as installing additional lighting or assigning more police officers during these times can be considered. Moreover, targeted education can be provided to individuals who are more vulnerable to crime, based on factors like race, age and sex. This research question is crucial as it aids both the public and government in understanding, preventing, and addressing crime more effectively.
+
+## 2. Data
+
+### 2.1 Data Cleaning
+
+The dataset has 2 variables which have blank values.
+
+|                    | **Number of missing values** |  **Type**  |
+|:------------------:|:----------------------------:|:----------:|
+|   **Victim Sex**   |           104,654            | Blank, "-" |
+| **Victim Descent** |           104,663            | Blank, "-" |
+
+In our dataset, which comprises over 8 million entries, we need to remove all rows that contain blank values or "-"s for two specific variables: victim sex and victim descent. Compensating for these missing values is not feasible, as they cannot be appropriately replaced with alternative values. Due to the dataset's large size, we replaced blank values in both variables with 'unknown' during the model configuration process.
+
+### 2.2 Outcome Variables
+
+1.  A new variable `crime_type` is derived from the 'Part 1-2' column in the original dataset which classifies crime committed into two categories; `serious` for crimes such as felony offenses like criminal homicide, forcible rape, etc; and `non-serious` for less severe crimes.
+
+    The bar plot below represents the count of the seriousness of crime by category in the dataset, about **60%** of the crimes committed are serious crimes.
+
+```{r, output = TRUE}
+#| fig-width: 5
+#| fig-height: 2
+ggplot(df, aes(x = crime_type, fill = crime_type)) +
+  geom_bar() +
+  labs(title = "Distribution of Crime Types", x = "Crime Types", y = "Count") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = 1.5) +   # Adjusted the vertical position of the text
+  scale_fill_manual(values = c("non-serious" = "#88DD88", "serious" = "#FF6666")) +  # Dimmed shades of green and red
+  theme(legend.position = "none",      # Remove the legend
+        plot.title = element_text(hjust = 0.5))  # Center the title
+```
+
+## 3. Model
+
+### 3.1 Priori Selection
+
+Considering our focus on understanding the influence of time, place, weapon used and demographic information on crime type, we examined variables that appeared more relevant or were likely to confound the relationship between the independent variables and the dependent variable.
+
+1.  `Research Question`: according to the research question, these variables are necessary to be included in the model.
+    -   Outcome variable: crime type (serious/non-serious)
+
+`Confounding`: we considered confounding while setting up the model because other variables can affect the occurrence of the crime type.
+
+-   Time hours occurrence: At specific times, such as night or early in the morning, serious crimes can occur frequently.
+
+-   Distance to precinct: There are specific areas where serious crime is committed more frequently.
+
+-   Weapon used: If a criminal uses a weapon, the probability of committing a serious crime is likely to be higher.
+
+-   Victim race: Depending on the race, the rate of serious crime occurrence can vary.
+
+-   Victim sex: Females might be more vulnerable to serious crime than males.
+
+-   Victim descent: Each descent has a different rate of exposure to serious crime.
+
+### 3.2 Variables in Model
+
+Based on priori selection through research question and confounding, these variables are on our model:
+
+-   `Independent variable`: time hours occurred, distance to precinct, weapon used, victim race, victim sex, victim descent
+
+-   `Outcome variable`: crime type
+
+## 4. Assessment
+
+### 4.1 Multicolinearity
+
+Since the VIF (Variance Inflation Factor) values of all variables in the model, except for victim sex and victim descent, are around 1, this indicates a high correlation between these two variables because each values are around 17 or 18. It suggests that including them in the model may lead to instability.
+
+```{r}
+vif(logi_model)
+```
+
+### 4.1 Model Fit
+
+#### 4.1.1 Deviance
+
+It is observed that the base model had the lowest deviance value, indicating that it provides a better explanation and a good fit for the data.
+
+-   Model (base model): 985184
+-   Alternative Model 1(excluded 'victim descent'): 989110.5
+-   Alternative Model 2(based on alternative model 1, excluded 'victim sex'): 1024930
+
+#### 4.1.2 Akaike Information Criterion
+
+Among the AIC values, base model had the lowest value, indicating that this model is the best for preventing overfitting.
+
+-   Model (base model): 985236
+-   Alternative Model 1(excluded 'victim descent'): 989126.5
+-   Alternative Model 2(based on alternative model 1, excluded 'victim sex'): 1024940
+
+#### 4.1.3 McFadden's pseudo R^2^
+
+The McFadden's Pseudo R^2^ value of 0.09032106 indicates that this model does not fit the data well, as it is relatively low compared to the typical range of 0.2 to 0.4. However, it's important to recognize that a higher McFadden's Pseudo R^2^ value doesn't necessarily imply that the model is the best fit for the dataset. Therefore, further examination and analysis of the model are required.
+
+### 4.2 ROC Curve
+
+Through the ROC curve, the best threshold for the model is found to be 0.618. This threshold allows us to comprehend the model's sensitivity and specificity. Furthermore, with an AUC value of 0.696(round value 0.7), it indicates that if the value approaches 1, the model's overall performance is considered excellent.
+
+```{r}
+length(factor(df$crime_type))
+```
+
+```{r}
+length(fitted(logi_model))
+```
+
+```{r, include=TRUE}
+roc_plot = roc(factor(df$crime_type), fitted(logi_model))
+
+# basic ROC plot
+plot(roc_plot, main = "ROC Curve")
+
+# calculate threshold
+coords <- coords(roc_plot, "best")
+
+# add  threshold and AOC value
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("Threshold:", coords$threshold), pos = 4, cex = 0.8)
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("AUC:", round(auc(roc_plot), 2)), pos = 2, cex = 0.8)
+```
+
+### 4.3Predicted Probabilities
+
+Analyzing the probability plot, it's evident that if the predicted probability falls below the threshold value of 0.618, there is a higher likelihood of non-serious crimes occurring; conversely, probabilities above this threshold are indicative of serious crimes. However, the plot also reveals that the probabilities are not distinctly separated into clear 'serious crime' and 'non-serious crime' regions based on this threshold. This lack of clear demarcation suggests that the model may not be performing optimally in distinguishing between the two types of outcomes.
+
+```{r, include=TRUE}
+df$predprobs <- predict(logi_model, type = "response")
+plot(df$predprobs, xlab = "Observations", ylab = "Predicted Probability", main = "Predicted Probabilities")
+```
+
+### 4.4 Confusion Matrix
+
+The confusion matrix shows that the model has 497,513 true positive and true negative values (TP, TN), and 300,729 false positive and false negative values (FP, FN).
+
+|                | **Observed** |         |
+|:--------------:|:------------:|:-------:|
+| **Prediction** |    **1**     |  **0**  |
+|     **1**      |   241,207    | 211,267 |
+|     **0**      |    89,462    | 256,306 |
+
+With a Kappa value of 0.2634, the model's classification performance significantly deviates from random predictions, indicating a need for improvement.
+
+|                              |    **Value**     |
+|------------------------------|:----------------:|
+| **Accuracy**                 |      0.6233      |
+| **95% Confidence Intervals** | (0.6222, 0.6243) |
+| **Kappa**                    |      0.2634      |
+| **Sensitivity**              |      0.5482      |
+| **Specificity**              |      0.7295      |
+
+## 5. Results
+
+### 5.1 Model Summary
+
+The following table displays coefficient estimates, standard errors, p-values, and confidence intervals. The coefficient estimates and confidence levels are presented as log odds.
+
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+|                                                    | **Coefficient\ | **Standard Errors** | **p-values**    | **Confidence Interval**\ |
+|                                                    | Estimates**    |                     |                 | (2.5%, 97.5%)            |
++:==================================================:+:==============:+:===================:+:===============:+:========================:+
+| **(Intercept)**                                    | 1.1994074      | 1.795e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Time hours occurred**                            | 1.0157575      | 3.695e-04           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Age**                                     | 0.9965660      | 1.511e-04           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: H**                                  | 1.5608725      | 2.240e-01           | 0.04689 \*      |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: Male**                               | 1.8870123      | 5.262e-03           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: Unknown**                            | 3.4596957      | 2.501e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Black**                          | 0.7113850      | 1.690e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Chinese**                        | 1.6816080      | 4.519e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Cambodian**                      | 1.4936671      | 2.991e-01           | 0.17973         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Filipino**                       | 1.1764790      | 4.062e-02           | 6.31e-05 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Guamanian**                      | 1.1197393      | 2.930e-01           | 0.69951         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Hispanic/Latin/Mexican**         | 0.6328782      | 1.632e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: American Indian/Alaskan Native** | 1.0565499      | 7.896e-02           | 0.48600         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Japanese**                       | 1.7841714      | 7.211e-02           | 9.89e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Korean**                         | 1.1257615      | 3.635e-02           | 0.00112 \*\*    |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Laotian**                        | 0.5476247      | 2.917e-01           | 0.03896 \*      |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Other**                          | 0.7775481      | 1.779e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Pacific Islander**               | 1.0373528      | 1.446e-01           | 0.79975         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Samoan**                         | 0.6791198      | 3.072e-01           | 0.20785         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Hawaiian**                       | 1.4673917      | 1.771e-01           | 0.03036 \*      |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Vietnamese**                     | 1.9440009      | 8.485e-02           | 4.71e-15 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: White**                          | 0.8580945      | 1.656e-02           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Unknown**                        | 1.0444115      | 2.848e-02           | 0.12701         |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Asian Indian**                   | 1.8363606      | 1.215e-01           | 5.64e-07 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Distance to precinct**                           | 0.9998391      | 6.238e-06           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Weapoon: Used**                                  | 0.5976145      | 5.255e-03           | \< 2e-16 \*\*\* |                          |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+
+### 5.2 Results
+
+We will present several plots here, including a map of California that depicts the counts of serious and non-serious crimes, a histogram showing the distribution of crimes based on the time of occurrence, a bar chart categorizing crimes by the weapon used, and pie charts illustrating the counts by race, sex, and descent.
+
+## 6. Conclusion
+
+1.  **Strengths**
+    -   The model effectively explains how the independent variables within the model significantly impact the crime type from a statistical perspective.
+
+    -   By using the model, it is possible to identify factors that influence the crime type beyond time hours occurred, distance to precinct, weapon used and demographic information by controlling for other variables, obtain more accurate results.
+2.  **Limitations**
+    -   Through various evaluation processes, it became evident that the model does not fit the data particularly well. In other words, it falls somewhat short in describing the data adequately.
+
+    -   In order to find a model suitable for the research question, it may be necessary to add more variables or obtain new data by introducing new variables.
