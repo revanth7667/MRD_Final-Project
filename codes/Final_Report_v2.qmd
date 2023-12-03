@@ -1,6 +1,6 @@
 ---
 title: "Los Angeles Crime Analysis"
-author: "Group 13: Titus(tra29), Revanth(rg361), Suim(sp699), Meixiang(md480)"
+author: "Group 13: Meixiang(md480), Revanth(rg361), Suim(sp699), Titus(tra29)"
 format: pdf
 editor: visual
 echo: FALSE
@@ -44,7 +44,7 @@ library(tidyverse)
 ```{r}
 #Load the data
 df_precinct <- read.csv("../data/Precinct_Location.csv")
-df <- read.csv('/Users/revanth/Documents/MIDS/Semester 1/MRD/Group Project/Datasets/crime.csv') #change this path later
+df <- read.csv('/Users/revanth/Documents/MIDS/Semester 1/MRD/Group Project/Datasets/crime.csv') #change this path later if required
 ```
 
 ```{r}
@@ -69,7 +69,7 @@ df <- df[df$DATE.OCC < as.Date("09/01/2023", "%m/%d/%Y"), ]
 ```
 
 ```{r}
-#Calculate Year, Month and Day
+#Calculate Year, Month, Day and Weekday
 df$dt_year = format(df$DATE.OCC,"%Y")
 df$dt_month = as.factor(format(df$DATE.OCC,"%m"))
 df$dt_day = format(df$DATE.OCC,"%d")
@@ -115,15 +115,38 @@ df$Vict.Sex <- as.factor(df$Vict.Sex)
 
 # 1. Abstract
 
-This analysis delves into the intricate dynamics of crime in Los Angeles, employing an extensive dataset from the Los Angeles Police Department (LAPD), covering incidents from 2020 to present. Utilizing Logistic and Poisson regression models, our research aims to unearth the pivotal factors influencing the seriousness and frequency of crimes. Key findings indicate significant temporal and spatial variations in crime rates, offering valuable insights for law enforcement and public safety strategies. This study not only enhances the understanding of crime patterns but also aids in resource allocation and preventive measures.
+This analysis delves into the intricate dynamics of crime in Los Angeles, employing an extensive dataset from the Los Angeles Police Department (LAPD), covering incidents from 2020 to present day. Utilizing Logistic and Poisson regression models, our research aims to unearth the pivotal factors influencing the seriousness of crime commited and predict the number crime occurrences in a given area and time respectively. Key findings from the first research objective indicate a relationship between factors like victim demorgraphic and time of day on the seriousness of crime committed. Findings from the second research objective indicate significant temporal and spatial variations in crime rates, offering valuable insights for law enforcement and public safety strategies. This study not only enhances the understanding of crime patterns but also aids in resource allocation and preventive measures.
 
 # 2. Introduction
 
-Crime, a complex and multifaceted social issue, demands meticulous investigation to inform and enhance public safety measures. This report capitalizes on a detailed dataset from the Los Angeles Police Department, encompassing a vast array of **815,882** crime reports. Recorded from 2020 to the present day, the dataset offers a rich tapestry of information, ranging from location specifics and victim demographics to crime types and investigative outcomes (Los Angeles Police Department, 2023). Each entry in the dataset is a unique amalgamation of several variables, including latitude, longitude, area, demographic details of the victim, and more, offering a comprehensive view of the crime landscape in Los Angeles.Central to our analysis are two pivotal research questions: First, we explore the determinants impacting the severity of crimes, a query crucial for preventive strategies and public awareness. Second, we aim to predict crime frequencies in specific areas and timeframes, a task vital for strategic law enforcement deployment and community safety initiatives. By employing logistic regression, we seek to understand the factors that significantly influence the seriousness of crimes. Concurrently, through Poisson regression modeling, we aim to forecast crime occurrences, accounting for a variety of predictors such as time, date, and geographic factors.Our investigation is not merely an academic exercise but a crucial endeavor to discern patterns and predictors within the urban landscape of Los Angeles. The insights gleaned from this analysis we're hoping can be instrumental in helping law enforcement agencies, policymakers, and the community at large, enabling a data-driven approach to crime prevention and optimized policing efforts. Furthermore, the study contributes to a broader understanding of criminal behavior, aiding in the development of effective community outreach programs and mitigating risk factors associated with crime.
+Crime, a complex and multifaceted social issue, demands meticulous investigation to inform and enhance public safety measures. This report capitalizes on a detailed dataset from the Los Angeles Police Department(LAPD), encompassing a vast array of reported crimes recorded from 2020 to the present day and updated by the LAPD on a `weekly` basis. The dataset offers a rich tapestry of information, offering a comprehensive view of the crime landscape in Los Angeles.
+
+As of **13-Oct-2023**, the Dataset has **815,882** observations of **28** variables and the information provided can broadly be classified into the following categories:
+
+1.  `Location`: Latitude, Longitude, Area, Street, District
+2.  `Victim Demographic`: Age, Gender, Ethnicity
+3.  `Crime Description`: Type of Crime, Investigation Outcomes, Weapon Usage
+4.  `Date and Time`: Date Reported, Date Occurred, Time Occurred
+5.  `Identifier/Classifier`: Crime Record Identifier, Mocodes
+
+Central to our analysis are two pivotal research questions: First, we explore the determinants impacting the severity of crimes, a query crucial for preventive strategies and public awareness. Second, we aim to predict crime frequencies in specific areas and timeframes, a task vital for strategic law enforcement deployment and community safety initiatives. By employing logistic regression, we seek to understand the factors that significantly influence the seriousness of crimes. Concurrently, through Poisson regression modeling, we aim to forecast crime occurrences, accounting for a variety of predictors such as time, date, and geographic factors.Our investigation is not merely an academic exercise but a crucial endeavor to discern patterns and predictors within the urban landscape of Los Angeles. The insights gleaned from this analysis we're hoping can be instrumental in helping law enforcement agencies, policymakers, and the community at large, enabling a data-driven approach to crime prevention and optimized policing efforts. Furthermore, the study contributes to a broader understanding of criminal behavior, aiding in the development of effective community outreach programs and mitigating risk factors associated with crime.
 
 # 3. Methodology
 
-Since the Dataset used for this project is dynamic in nature, a fixed snapshot of the data as of **13-Oct-2023** was used to prevent any errors or fluctuations of the results.
+Since the Dataset is dynamic in nature and updated on a weekly basis, a fixed snapshot of the data as of **13-Oct-2023** was used throughout the research process to prevent any errors or fluctuations of the outcomes and results.
+
+## Data Cleaning & EDA
+
+The following cleaning and processing steps were performed on the data before it was used for the analysis and modelling:
+
+1.  Distance to precinct: using the Latitude (LAT) and Longitude (LON) columns from the dataset and publicly available co-ordinates of the precincts in Los Angeles we calculated the distance between the spot of crime occurrence and the precinct it was reported in, to understand if there was a relationship between the distance and the seriousness of crime.
+2.  Data Type Conversion: Columns were converted to their relevant Datatypes e.g: Conversion of Date related columns to Datetime, Victim Sex, Gender as Factors etc.
+3.  Bucketing: Columns like Time of crime occurrence were bucketed in order to decrease the number of unique levels and avoid over-fitting
+4.  Imputation: Empty values (systemic) in certain columns of interest like Victim Gender and Ethnicity were filled or combined with place holder values (e.g. "X") so that they can be used for analysis and modelling
+5.  Time Restriction: Since the data is dynamic in nature and the most recent crimes may not be reported yet, the time-frame for analysis was restricted and we considered only data up to **31-Aug-2023** so that there is no skewing of the results
+6.  Helper Columns: New columns such as number of days between crime occurrence and reporting, Month, Weekday etc. were calculated from the columns present in the dataset.
+
+Post the restrcition of the Time-frame for analysis, The number of observations reduced to **794,388**, a reduction of **21,494** (\~2.5%) observations.
 
 Exploratory Data Analysis (EDA) was performed to understand the trends and relationship between the crime occurrences and the following factors:
 
@@ -132,28 +155,25 @@ Exploratory Data Analysis (EDA) was performed to understand the trends and relat
 3.  Victim Demographic: Age, Ethnicity, Gender
 4.  General: proportion of crime types, daily rate
 
-The following cleaning and processing steps were performed on the data before it was used for the analysis and modelling:
-
-1.  Distance to precinct: we calculated using the Latitude (LAT) and Longitude (LON) columns from the dataset and publicly available co-ordinates of the precincts in Los Angeles
-2.  Data Type Conversion: Columns were converted to their relevant Datatypes e.g: Conversion of Date related columns to Datetime, Victim Sex, Gender as Factors etc.
-3.  Bucketing: Columns like Time of crime occurrence were bucketed in order to decrease the number of unique levels and avoid over-fitting
-4.  Imputation: Blank and empty values in certain columns of interest like Victim Gender and Ethnicity were filled or combined with place holder values (e.g. "X") so that they can be used in the modelling phase
-5.  Time Restriction: Since the data is dynamic in nature and the most recent crimes may not be reported yet, the time-frame for analysis was restricted and we considered only data up to 31-Aug-2023 so that there is no skewing of the results
-6.  Helper Columns: New columns such as number of days between crime occurrence and reporting were calculated, Month, Weekday etc. were calculated from the columns present in the dataset.
-
-Post the restrcition of the Time-frame for analysis, The number of observations reduced to **794,388**, a reduction of **21,494** (\~2.5%) observations.
-
 ## Research Question 1
 
-The first research question is addressed using logistic regression, which is well-suited for binary outcomes such as 'serious' and 'non-serious'. Logistic regression is particularly effective for inference, allowing us to identify factors that influence the seriousness of crimes committed. Prior to model construction, it was essential to eliminate rows with blank values or "-" for two specific variables: victim sex and victim descent. These missing values were impractical to impute and were replaced with 'unknown' during model configuration, due to the dataset's large size. Subsequently, we removed all 'unknown' values from each variable.
+Question: **"What are the strongest indicating factors that influence the seriousness of crime committed"**
+
+The **binary** outcome variable "crime type" was created by converting the "Part 1 2" column from the original dataset which indicates the seriousness of crime committed, the following mapping was performed 1-"serious", 2-"non-serious" and the result was saved as as a factor.
+
+**Logistic Regression** was chosen for this analysis since it is well-suited for binary outcomes such as 'serious' and 'non-serious'. Logistic regression is also particularly effective for inference since the output is easily interpretable, allowing us to identify factors that influence the seriousness of crimes committed.
+
+Prior to model construction, it was essential to eliminate rows with blank values or "-" for two specific variables: victim sex and victim descent. These missing values were impractical to impute and were replaced with 'unknown' during model configuration, due to the dataset's large size. Subsequently, we removed all 'unknown' values from each variable.
 
 Based on a priori selection, we included factors like time of occurrence, distance to the precinct, demographic information (gender, age, descent), and weapon usage, hypothesizing that these significantly impact crime seriousness. Regarding collinearity, the Variance Inflation Factor (VIF) values for each variable were around 1, indicating stability in the model.
 
 ## Research Question 2
 
-The focus of our statistical investigation addresses pivotal questions concerning the predictors of crime severity and the forecast of crime occurrences.Our methodology was designed to provide insights into crime patterns and to predict the number of crimes in a given area and time period.
+Question: **"What is the predicted number of crimes for a given area and time period?"**
 
-Utilizing **Poisson regression**, an optimal approach for modeling count data, we aim to predict the frequency of crimes in Los Angeles with precision and statistical accuracy, leveraging the model's suitability for such discrete outcome variables. This model allows us to integrate time, date, and location variables, capturing the essence of crime occurrences over various periods and areas. By employing a Poisson regression model, we aim to dissect the frequency of crimes within the multifaceted urban setup of Los Angeles, identifying temporal and spatial hotspots of criminal activity.
+Each row of our dataset is an individual crime incident, to get the count of crimes which is required for answering this research question, we aggregated the data at a Location(Area)-Month-Weekday level and got the count of crimes at this level.
+
+**Poisson regression** was chosen for this analysis as it is as optimal approach for modeling count data and the output can be interpreted easily. we aim to predict the frequency of crimes in Los Angeles with precision and statistical accuracy, leveraging the model's suitability for such discrete outcome variables. This model allows us to integrate time, date, and location variables, capturing the essence of crime occurrences over various periods and areas. By employing a Poisson regression model, we aim to dissect the frequency of crimes within the multifaceted urban setup of Los Angeles, identifying temporal and spatial hotspots of criminal activity.
 
 Given the prediction nature, we've narrowed down our model to the following variables, and undergone **stepwise forward** selection and **cross-validation** to refine and optimize the predictive performance.
 
@@ -161,11 +181,9 @@ List of Predictor Variables
 
 -   Independent Variables
 
-    \- Time and Date: Time Occurred, Date Occurred
+    \- Date: Month and Weekday
 
     \- Geographic Factor: Area
-
-<!-- -->
 
 -   Outcome Variable
 
