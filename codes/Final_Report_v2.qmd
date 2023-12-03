@@ -53,7 +53,7 @@ str(df)
 
 ```{r}
 #Date Related Cleanings
-#Clean the Data Columns and create difference
+#Clean the Date Columns and create difference
 df$DATE.OCC <- substr(df$DATE.OCC,1,10) 
 df$DATE.OCC <- as.Date(df$DATE.OCC, "%m/%d/%Y")
 
@@ -375,7 +375,7 @@ The model's insights include:
 
 ```{r}
 #creating dataframe for logistic regression
-df_logi <- df2[,!names(df2) %in% c("AREA.NAME", "dt_weekday", "dt_month")]
+df_logi <- df2[df$Vict.Sex != "H",!names(df2) %in% c("AREA.NAME", "dt_weekday", "dt_month")]
 str(df_logi)
 ```
 
@@ -501,7 +501,28 @@ df_logi$predprobs <- predict(model_logi, type = "response")
 plot(df_logi$predprobs, xlab = "Observations", ylab = "Predicted Probability", main = "Predicted Probabilities")
 ```
 
-## Model 2 : Poisson
+```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+plot_logi <- df_logi %>% 
+  count(Vict.Sex, crime_type) %>%
+  group_by(Vict.Sex) %>%
+  mutate(pct=n/sum(n) * 100) %>%
+  ggplot() + aes(Vict.Sex, n, fill=crime_type) +
+  geom_bar(stat="identity") +
+  ylab("Number of Crimes") +
+  xlab("Sex of Victim")+
+  ggtitle("Crime Type Distribution w.r.t Victim Sex")+
+  geom_text(aes(label=paste0(sprintf("%1.1f", pct),"%")),
+            position=position_stack(vjust=0.5))+
+  scale_fill_discrete(labels=c('Non-Serious', 'Serious'), name = "Crime Type")+
+  theme_bw()
+plot_logi
+```
+
+```{r}
+names(df_logi)
+```
+
+## 4.3  Poisson Model Regression
 
 With forward step wise selection and cross validation methods to improve model, the deviance measures goodness of fit, with a null deviance of 35064 and a residual deviance of 5204, indicating a substantial improvement in model fit, resulting in an AIC value of 15356 with 4 Fisher Scoring iterations.
 
@@ -643,3 +664,35 @@ position = position_jitter(h = 0.2)) +
 geom_line() + labs(x = "", y = "Number of crimes",
 colour = "Weekday") + ggtitle("Predicted Number of crime by month")
 ```
+
+# 5. Conclusion
+
+Our analysis of Los Angeles crime data using Logistic and
+Poisson regression models reveals significant insights while also
+highlighting key limitations and future research directions. The
+Logistic model uncovers that crimes during night or early morning hours,
+proximity to certain precincts, and victim demographics are critical
+factors in determining crime severity. Surprisingly, weapon usage did
+not significantly influence the seriousness of a crime. Despite these
+insights, the model's limited explanatory power, as reflected in its
+accuracy and McFadden's pseudo R2 value, suggests the need for further
+refinement.
+
+The Poisson model, on the other hand, highlights temporal
+and spatial variations in crime patterns. Weekdays and certain months
+exhibit distinct crime trends, and geographical disparities in crime
+rates across police areas offer valuable insights for targeted law
+enforcement efforts. However, issues with model assumptions and
+over-dispersion necessitate consideration of alternative models like
+negative binomial regression in future studies.
+
+These findings, while insightful, must be viewed in the
+context of the study's limitations. The challenge of managing 'Unknown'
+categories in demographic data, potential model misspecification, and
+the need for more comprehensive variables are areas for future
+improvement. This study's endeavor to understand and predict crime
+patterns in Los Angeles aligns with our initial motivation to aid public
+safety strategies and crime prevention. Moving forward, enhancing model
+accuracy and incorporating broader datasets could provide deeper
+insights into the dynamics of crime, ultimately contributing to more
+effective public safety planning and community welfare.
