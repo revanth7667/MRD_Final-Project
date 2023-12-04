@@ -15,7 +15,7 @@ library(car)
 library(caret)
 library(caTools)
 #library(corrplot)
-#library(cvms)
+library(cvms)
 library(dplyr)
 library(geosphere)
 #library(ggmap)
@@ -66,6 +66,10 @@ df$rpt_diff <- df$Date.Rptd- df$DATE.OCC
 ```{r}
 #Dropping data after Sept-2023 as this may give outlier as seen during EDA, adjust to Oct-01 if required
 df <- df[df$DATE.OCC < as.Date("09/01/2023", "%m/%d/%Y"), ]
+```
+
+```{r}
+sum(is.na(df$DATE.OCC))
 ```
 
 ```{r}
@@ -135,7 +139,7 @@ Central to our analysis are two pivotal research questions: First, we explore th
 
 Since the Dataset is dynamic in nature and updated on a weekly basis, a fixed snapshot of the data as of **13-Oct-2023** was used throughout the research process to prevent any errors or fluctuations of the outcomes and results.
 
-## Data Cleaning & EDA
+## 3.1 Data Cleaning & EDA
 
 The following cleaning and processing steps were performed on the data before it was used for the analysis and modelling:
 
@@ -155,7 +159,7 @@ Exploratory Data Analysis (EDA) was performed to understand the trends and relat
 3.  Victim Demographic: Age, Ethnicity, Gender
 4.  General: proportion of crime types, daily rate
 
-## Research Question 1
+## 3.2 Research Question 1
 
 Question: **"What are the strongest indicating factors that influence the seriousness of crime committed"**
 
@@ -167,15 +171,15 @@ Prior to model construction, it was essential to eliminate rows with blank value
 
 In our a priori selection, factors like time of occurrence, distance to the precinct, demographic information (gender, age, descent), and weapon usage were included, hypothesizing that these significantly influence crime seriousness. We also explored the interaction term with sex and descent, based on the hypothesis that specific genders and descents might be interrelated. However, the model with the interaction term did not yield statistically significant results, leading to its removal from the final model. Additionally, several assessment methods were considered for fitting the model to the dataset.
 
-Firstly, regarding collinearity, we chose to use the Variance Inflation Factor (VIF) to assess collinearity within the model. We also employed deviance and the Akaike Information Criterion (AIC) to find the most fitting model by comparing two alternative models, excluding victim sex and descent. Based on the relationship between crime seriousness and 1, we evaluated the model's fit using McFadden's pseudo R\^2 value. Additionally, we assessed the model using the ROC curve and confusion matrix through prediction methods. These approaches helped us determine the extent to which the model fits the dataset and its effectiveness in addressing the research question.
+Firstly, regarding collinearity, we chose to use the Variance Inflation Factor (VIF) to assess collinearity within the model. We also employed deviance and the Akaike Information Criterion (AIC) to find the most fitting model by comparing two alternative models, excluding victim sex and descent. Based on the relationship between crime seriousness and 1, we evaluated the model's fit using McFadden's pseudo R^2^ value. Additionally, we assessed the model using the ROC curve and confusion matrix through prediction methods. These approaches helped us determine the extent to which the model fits the dataset and its effectiveness in addressing the research question.
 
-## Research Question 2
+## 3.3 Research Question 2
 
 Question: **"What is the predicted number of crimes for a given area and time period?"**
 
 Each row of our dataset is an individual crime incident, to get the count of crimes which is required for answering this research question, we aggregated the data at a Location(Area)-Month-Weekday level and got the count of crimes at this level.
 
-**Poisson regression** was chosen for this analysis as it is as optimal approach for modeling count data and the output can be interpreted easily. This model allows us to integrate time, date, and location variables, capturing the essence of crime occurrences over various periods and areas.
+**Poisson regression** was chosen for this analysis as it is an optimal approach for modeling count data and the output can be interpreted easily. This model allows us to integrate time, date, and location variables, capturing the essence of crime occurrences over various periods and areas.
 
 Given the prediction nature, we've narrowed down our model to the following variables:
 
@@ -185,7 +189,7 @@ Given the prediction nature, we've narrowed down our model to the following vari
 
 To refine and optimize the model, **cross-validation** and **stepwise forward** selection was used
 
-To assess model fit, the data was split into Train and Test and the model was used to predict the number of crimes on Test dataset, metrics such as RMSE and R2 were studied to evaluate the performance of the model
+To assess model fit, the data was split into Train and Test and the model was used to predict the number of crimes on Test dataset, metrics such as RMSE and R^2^ were studied to evaluate the performance of the model
 
 # 4. Results
 
@@ -355,35 +359,44 @@ df2 <- df[,names(df) %in% column_keep]
 str(df2)
 ```
 
-## 4.2 : Logistic Regression
+## 4.2 Logistic Regression
 
-The model was refined using forward stepwise selection and cross-validation. The goodness of fit was indicated by a null deviance of 980739.3, leading to a significant model improvement with an AIC of 980789.3. However, the McFadden's pseudo R^2^ value of 0.09004, though low, suggests limited explanatory power.
+The Logistic Regression model was fit on the selected columns as mentioned earlier and it gave the following (selected) `exponentiated` parameters as the output:
 
-The model's accuracy was approximately 61.87%, not sufficiently high to be definitive. A Kappa value of 0.2611, while slightly better than chance, also indicates modest performance. Sensitivity and specificity are crucial in evaluating the model. Sensitivity (true positive rate) effectively identifies actual serious cases, while specificity (true negative rate) accurately identifies non-serious cases. These metrics collectively offer a comprehensive view of the model's ability to distinguish between serious and non-serious cases. The following table briefly describes the results of the confusion matrix:
+\tiny
 
-|                              |    **Value**     |
-|------------------------------|:----------------:|
-| **Accuracy**                 |      0.6187      |
-| **95% Confidence Intervals** | (0.6177, 0.6198) |
-| **Kappa**                    |      0.2611      |
-| **Sensitivity**              |      0.5217      |
-| **Specificity**              |      0.7558      |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+|                              | **Coefficient\ | **Standard Errors** | **p-values**    | **Confidence Interval**\ |
+|                              | Estimates**    |                     |                 | (2.5%, 97.5%)            |
++:============================:+:==============:+:===================:+:===============:+:========================:+
+| **(Intercept)**              | 1.1932         | 1.798e-02           | \< 2e-16 \*\*\* | (1.1519, 1.2361)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Time hours occurred**      | 1.0159         | 3.704e-04           | \< 2e-16 \*\*\* | (1.0151, 1.0166)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Age**               | 0.9965         | 1.513e-04           | \< 2e-16 \*\*\* | (0.9962, 0.9968)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: Male**         | 1.8827         | 5.271e-03           | \< 2e-16 \*\*\* | (1.8634, 1.9023)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Japanese** | 1.7731         | 7.185e-02           | 1.56e-15 \*\*\* | (1.5423, 2.0443)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: White**    | 0.8616         | 1.659e-02           | \< 2e-16 \*\*\* | (0.8340, 0.8900)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Distance to precinct**     | 0.9998         | 5.826e-06           | \< 2e-16 \*\*\* | (0.9998, 0.9999)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Weapoon: Used**            | 0.5995         | 5.269e-03           | \< 2e-16 \*\*\* | (0.5933, 0.6057)         |
++------------------------------+----------------+---------------------+-----------------+--------------------------+
 
-The model's insights include:
+\normalsize
 
--   Time hours occurred: Night or early morning crimes were more likely to be serious.
+The coefficients above represent the odds of particular category or unit increase in value being a victim of serious crime as compared to the reference level for that category. E.g. A Male is 1.88 times more likely to be a victim of a serious crime as compared to a female.
 
--   Distance to precinct: Closer proximity to certain precincts correlated with serious crimes.
+The model was compared with other models and null-model to study interactions and asses the model.
 
--   Demographic Information: Men and younger individuals were more often victims of serious crimes, with certain racial groups being more susceptible. Among the various descents, individuals of Cambodian, Filipino, Japanese, Korean, Vietnamese, and Asian Indian descent were more likely to be victims of serious crimes compared to other racial groups.
+The goodness of fit was indicated by a null deviance of 980739.3, leading to a significant model improvement with an **AIC** of 980789.3. However, the McFadden's pseudo R^2^ value of 0.09004, though low, suggests limited explanatory power.
 
--   Weapon Used: The presence of a weapon did not significantly increase the likelihood of a crime being serious. Instead, crimes committed without a weapon had a higher probability of occurring.
+The VIF score of most of the parameters was less than 3 and only the Victim Descent was above 10.
 
-These results provide insights into the factors that influence the occurrence of serious crimes. While many variables show statistical significance, the study does have its limitations. To enhance the model, incorporating additional variables or exploring new datasets could be beneficial. A major challenge lies in managing the 'Unknown' categories within Demographic Information, which is essential for improving the study's accuracy and relevance. In our modeling configuration, we have removed all such values from the dataset.
-
-Furthermore, although variables such as 'time hours occurred' and 'distance to precinct' show statistical significance, their probabilities of influencing serious crime occurrences are close to 1, indicating minimal impact. This finding warrants further investigation into the underlying reasons for this observation.
-
-Consequently, given these limitations, it becomes imperative to examine other variables within the dataset or to consider integrating additional data, such as other Los Angeles crime datasets, to augment and refine the model. This approach could provide a more comprehensive understanding of the factors contributing to serious crime occurrences and enhance the predictive power of the model.
+A confusion matrix was created and the following metrics were studied to evaluate the model:
 
 ```{r}
 #creating dataframe for logistic regression
@@ -463,7 +476,7 @@ plot(roc_plot, main = "ROC Curve")
 coords <- coords(roc_plot, "best")
 
 # add  threshold and AOC value
-text(x = coords$specificity, y = coords$sensitivity, labels = paste("Threshold:", coords$threshold), pos = 4, cex = 0.8)
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("Threshold:", round(coords$threshold,3)), pos = 4, cex = 0.8)
 text(x = coords$specificity, y = coords$sensitivity, labels = paste("AUC:", round(auc(roc_plot), 2)), pos = 2, cex = 0.8)
 ```
 
@@ -486,9 +499,38 @@ conf_matrix <- confusionMatrix(predicted_factor, crime_type_factor, positive = "
 conf_matrix
 ```
 
-```{r}
-#california_map <- map_data("county", "california")
+```{r, output = TRUE, warning=FALSE, message=FALSE, fig.height=2.5, fig.width=2.5}
+plot_confusion_matrix(as_tibble(conf_matrix$table), 
+                      prediction_col = "Prediction",
+                      target_col = "Reference",
+                      counts_col = "n")
 ```
+
+The following table briefly describes the results of the confusion matrix:
+
+|            Metric            |    **Value**     |
+|:----------------------------:|:----------------:|
+|         **Accuracy**         |      0.6187      |
+| **95% Confidence Intervals** | (0.6177, 0.6198) |
+|          **Kappa**           |      0.2611      |
+|       **Sensitivity**        |      0.5217      |
+|       **Specificity**        |      0.7558      |
+
+The model's accuracy was approximately 61.87%, not sufficiently high to be definitive. A Kappa value of 0.2611, while slightly better than chance, also indicates modest performance. Sensitivity and specificity are crucial in evaluating the model. Sensitivity (true positive rate) effectively identifies actual serious cases, while specificity (true negative rate) accurately identifies non-serious cases. These metrics collectively offer a comprehensive view of the model's ability to distinguish between serious and non-serious cases.
+
+The model's insights include:
+
+-   Time hours occurred: Night or early morning crimes were more likely to be serious.
+
+-   Distance to precinct: Closer proximity to certain precincts correlated with serious crimes.
+
+-   Demographic Information: Men and younger individuals were more often victims of serious crimes, with certain racial groups being more susceptible. Among the various descents, individuals of Cambodian, Filipino, Japanese, Korean, Vietnamese, and Asian Indian descent were more likely to be victims of serious crimes compared to other racial groups.
+
+-   Weapon Used: The presence of a weapon did not significantly increase the likelihood of a crime being serious. Instead, crimes committed without a weapon had a higher probability of occurring.
+
+These results provide insights into the factors that influence the occurrence of serious crimes. While many variables show statistical significance, the study does have its limitations. To enhance the model, incorporating additional variables or exploring new datasets could be beneficial. A major challenge lies in managing the 'Unknown' categories within Demographic Information, which is essential for improving the study's accuracy and relevance. In our modeling configuration, we have removed all such values from the dataset.
+
+The below the graph establishes one of the outputs of the model that Males are more likely to be a viticm of violent crime as compared to females:
 
 ```{r}
 vif(model_logi)
@@ -534,21 +576,47 @@ plot_logi
 names(df_logi)
 ```
 
-## 4.3  Poisson Model Regression
+## 4.3 Poisson Model Regression
+
+The Logistic Regression model was fit on the selected columns as mentioned earlier and it gave the following (selected) `exponentiated` parameters as the output:
+
++-------------------+----------------+---------------------------+----------------------------+-------------+
+|                   | **Coefficient\ | 2.50% Confidence Interval | 97.50% Confidence Interval | P Values    |
+|                   | Estimates**    |                           |                            |             |
++===================+================+===========================+============================+=============+
+| (Intercept)       | 663.6024       | 655.4907                  | 671.7956                   | 0.00E+00    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
+| Weekday: Saturday | 0.9705         | 0.9638                    | 0.9773                     | 0.00E+00    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
+| Month: 02         | 0.9399         | 0.9283                    | 0.9517                     | 0.00E+00    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
+| Month: 08         | 1.0163         | 1.0046                    | 1.0281                     | 6.20E-03    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
+| Area: Hollywood   | 0.8362         | 0.8236                    | 0.8491                     | 0.00E+00    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
+| Area: Southwest   | 0.8898         | 0.8769                    | 0.9029                     | 0.00E+00    |
++-------------------+----------------+---------------------------+----------------------------+-------------+
 
 With forward step wise selection and cross validation methods to improve model, the deviance measures goodness of fit, with a null deviance of 35064 and a residual deviance of 5204, indicating a substantial improvement in model fit, resulting in an AIC value of 15356 with 4 Fisher Scoring iterations.
+
+The model was made to predict the count of crimes on the Test dataset and these values were compared against the original count of crimes and the following metrics were used to evaluate the model:
+
+|  Metric   | **Value** |
+|:---------:|:---------:|
+|   RMSE    |   42.59   |
+| R-Squared |   0.82    |
 
 Our preliminary evaluation of the model's predictive accuracy, gauged through the RMSE, yielded a value of 42.59 to estimate the average difference between the predicted and observed crime counts. Additionally, the R-squared value of 0.82 reflected a strong linear relationship between the observed and predicted crime counts, explaining a substantial proportion of the variance in the crime data.
 
 Preliminary examination of the model outputs suggests distinct spatial and temporal crime patterns.
 
--   **Day of the Week Matters:**Different weekdays impact crime differently. For example, crimes are more likely on weekends compared to others weekdays, and these differences are confirmed by the p-values associated with these coefficient.
+-   **Day of the Week:** Different weekdays impact crime differently. For example, crimes are more likely on weekends compared to others weekdays, and these differences are confirmed by the p-values associated with these coefficient.
 
--   **Monthly Trends in Crime:**Crime rates vary by month. Some months, like February and September, see fewer crimes, while others, like July and August, experience more. These patterns are statistically significant.
+-   **Month:** Crime rates vary by month. Some months, like February and September, see fewer crimes, while others, like July and August, experience more. These patterns are statistically significant.
 
--   **Geographical Differences:**Crime rates differ by police area. Some areas have higher crime rates (e.g., "Southwest"), while others have lower rates (e.g., "Hollywood"). These variations are statistically significant, providing insights into local crime trends.
+-   **Area:** Crime rates differ by police area. Some areas have higher crime rates (e.g., "Southwest"), while others have lower rates (e.g., "Hollywood"). These variations are statistically significant, providing insights into local crime trends.
 
-However, with a dispersion value of 4.07, it indicates potential problems with the model assumptions, likely due to factors such as Population Heterogeneity and Model Misspecification. Zero-Inflation and Correlation Among Observations have been ruled out. To address these issues, consider switching to a negative binomial model for better handling over-dispersion and troubleshoot Population Heterogeneity and Model Misspecification to improve the model.
+However, with a dispersion value of 4.07, it indicates potential problems with the model assumptions, likely due to factors such as Population Heterogeneity and Model Misspecification. Zero-Inflation and Correlation Among Observations have been ruled out.
 
 Plot the predictions alongside observed counts, depicts the pattern of the number of crime varies from month to month weekday and weekends.
 
@@ -648,6 +716,7 @@ p_values <- summary(model_forward)$coefficients[, 4]
 
 # Combine the exponentiated coefficients with their corresponding confidence intervals and p-values
 results_summary <- cbind(exp_coef, conf_int, p_values)
+results_summary
 ```
 
 ```{r}
@@ -679,32 +748,8 @@ colour = "Weekday") + ggtitle("Predicted Number of crime by month")
 
 # 5. Conclusion
 
-Our analysis of Los Angeles crime data using Logistic and
-Poisson regression models reveals significant insights while also
-highlighting key limitations and future research directions. The
-Logistic model uncovers that crimes during night or early morning hours,
-proximity to certain precincts, and victim demographics are critical
-factors in determining crime severity. Surprisingly, weapon usage did
-not significantly influence the seriousness of a crime. Despite these
-insights, the model's limited explanatory power, as reflected in its
-accuracy and McFadden's pseudo R2 value, suggests the need for further
-refinement.
+Our analysis of Los Angeles crime data using Logistic and Poisson regression models reveals significant insights while also highlighting key limitations and future research directions. The Logistic model uncovers that crimes during night or early morning hours, proximity to certain precincts, and victim demographics are critical factors in determining crime severity. Surprisingly, weapon usage did not significantly influence the seriousness of a crime. Despite these insights, the model's limited explanatory power, as reflected in its accuracy and McFadden's pseudo R2 value, suggests the need for further refinement.
 
-The Poisson model, on the other hand, highlights temporal
-and spatial variations in crime patterns. Weekdays and certain months
-exhibit distinct crime trends, and geographical disparities in crime
-rates across police areas offer valuable insights for targeted law
-enforcement efforts. However, issues with model assumptions and
-over-dispersion necessitate consideration of alternative models like
-negative binomial regression in future studies.
+The Poisson model, on the other hand, highlights temporal and spatial variations in crime patterns. Weekdays and certain months exhibit distinct crime trends, and geographical disparities in crime rates across police areas offer valuable insights for targeted law enforcement efforts. However, issues with model assumptions and over-dispersion necessitate consideration of alternative models like negative binomial regression in future studies.
 
-These findings, while insightful, must be viewed in the
-context of the study's limitations. The challenge of managing 'Unknown'
-categories in demographic data, potential model misspecification, and
-the need for more comprehensive variables are areas for future
-improvement. This study's endeavor to understand and predict crime
-patterns in Los Angeles aligns with our initial motivation to aid public
-safety strategies and crime prevention. Moving forward, enhancing model
-accuracy and incorporating broader datasets could provide deeper
-insights into the dynamics of crime, ultimately contributing to more
-effective public safety planning and community welfare.
+These findings, while insightful, must be viewed in the context of the study's limitations. The challenge of managing 'Unknown' categories in demographic data, potential model misspecification, and the need for more comprehensive variables are areas for future improvement. This study's endeavor to understand and predict crime patterns in Los Angeles aligns with our initial motivation to aid public safety strategies and crime prevention. Moving forward, enhancing model accuracy and incorporating broader datasets could provide deeper insights into the dynamics of crime, ultimately contributing to more effective public safety planning and community welfare.
