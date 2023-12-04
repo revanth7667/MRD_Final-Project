@@ -123,7 +123,7 @@ This analysis delves into the intricate dynamics of crime in Los Angeles, employ
 
 # 2. Introduction
 
-Crime, a complex and multifaceted social issue, demands meticulous investigation to inform and enhance public safety measures. This report capitalizes on a detailed dataset from the Los Angeles Police Department(LAPD), encompassing a vast array of reported crimes recorded from 2020 to the present day and updated by the LAPD on a `weekly` basis. The dataset offers a rich tapestry of information, offering a comprehensive view of the crime landscape in Los Angeles.
+Crime, a complex and multifaceted social issue, demands meticulous investigation to inform and enhance public safety measures. This report capitalizes on a detailed [Dataset](https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8) (Los Angeles Police Department, 2023) from the Los Angeles Police Department(LAPD), encompassing a vast array of reported crimes recorded from 2020 to the present day and updated by the LAPD on a `weekly` basis. The dataset offers a rich tapestry of information, offering a comprehensive view of the crime landscape in Los Angeles.
 
 As of **13-Oct-2023**, the Dataset has **815,882** observations of **28** variables and the information provided can broadly be classified into the following categories:
 
@@ -133,7 +133,7 @@ As of **13-Oct-2023**, the Dataset has **815,882** observations of **28** variab
 4.  `Date and Time`: Date Reported, Date Occurred, Time Occurred
 5.  `Identifier/Classifier`: Crime Record Identifier, Mocodes
 
-Central to our analysis are two pivotal research questions: First, we explore the determinants impacting the severity of crimes, a query crucial for preventive strategies and public awareness. Second, we aim to predict crime frequencies in specific areas and timeframes, a task vital for strategic law enforcement deployment and community safety initiatives. By employing logistic regression, we seek to understand the factors that significantly influence the seriousness of crimes. Concurrently, through Poisson regression modeling, we aim to forecast crime occurrences, accounting for a variety of predictors such as time, date, and geographic factors.Our investigation is not merely an academic exercise but a crucial endeavor to discern patterns and predictors within the urban landscape of Los Angeles. The insights gleaned from this analysis we're hoping can be instrumental in helping law enforcement agencies, policymakers, and the community at large, enabling a data-driven approach to crime prevention and optimized policing efforts. Furthermore, the study contributes to a broader understanding of criminal behavior, aiding in the development of effective community outreach programs and mitigating risk factors associated with crime.
+Central to our analysis are two pivotal research questions: First, we explore the determinants impacting the severity of crimes, a query crucial for preventive strategies and public awareness. Second, we aim to predict crime frequencies in specific areas and timeframes, a task vital for strategic law enforcement deployment and community safety initiatives. By employing logistic regression, we seek to understand the factors that significantly influence the seriousness of crimes. Concurrently, through Poisson regression modeling, we aim to forecast crime occurrences, accounting for a variety of predictors such as time, date, and geographic factors. Our investigation is not merely an academic exercise but a crucial endeavor to discern patterns and predictors within the urban landscape of Los Angeles. The insights gleaned from this analysis we're hoping can be instrumental in helping law enforcement agencies, policymakers, and the community at large, enabling a data-driven approach to crime prevention and optimized policing efforts. Furthermore, the study contributes to a broader understanding of criminal behavior, aiding in the development of effective community outreach programs and mitigating risk factors associated with crime.
 
 # 3. Methodology
 
@@ -363,8 +363,6 @@ str(df2)
 
 The Logistic Regression model was fit on the selected columns as mentioned earlier and it gave the following (selected) `exponentiated` parameters as the output:
 
-\tiny
-
 +------------------------------+----------------+---------------------+-----------------+--------------------------+
 |                              | **Coefficient\ | **Standard Errors** | **p-values**    | **Confidence Interval**\ |
 |                              | Estimates**    |                     |                 | (2.5%, 97.5%)            |
@@ -386,7 +384,7 @@ The Logistic Regression model was fit on the selected columns as mentioned earli
 | **Weapoon: Used**            | 0.5995         | 5.269e-03           | \< 2e-16 \*\*\* | (0.5933, 0.6057)         |
 +------------------------------+----------------+---------------------+-----------------+--------------------------+
 
-\normalsize
+`Note`: Full Model Coefficients are present in Appendix
 
 The coefficients above represent the odds of particular category or unit increase in value being a victim of serious crime as compared to the reference level for that category. E.g. A Male is 1.88 times more likely to be a victim of a serious crime as compared to a female.
 
@@ -499,7 +497,7 @@ conf_matrix <- confusionMatrix(predicted_factor, crime_type_factor, positive = "
 conf_matrix
 ```
 
-```{r, output = TRUE, warning=FALSE, message=FALSE, fig.height=2.5, fig.width=2.5}
+```{r, output = TRUE, warning=FALSE, message=FALSE, fig.height=3, fig.width=3}
 plot_confusion_matrix(as_tibble(conf_matrix$table), 
                       prediction_col = "Prediction",
                       target_col = "Reference",
@@ -526,7 +524,7 @@ The model's insights include:
 
 -   Demographic Information: Men and younger individuals were more often victims of serious crimes, with certain racial groups being more susceptible. Among the various descents, individuals of Cambodian, Filipino, Japanese, Korean, Vietnamese, and Asian Indian descent were more likely to be victims of serious crimes compared to other racial groups.
 
--   Weapon Used: The presence of a weapon did not significantly increase the likelihood of a crime being serious. Instead, crimes committed without a weapon had a higher probability of occurring.
+-   Weapon Usage: The presence of a weapon did not significantly increase the likelihood of a crime being serious. Instead, crimes committed without a weapon had a higher probability of occurring.
 
 These results provide insights into the factors that influence the occurrence of serious crimes. While many variables show statistical significance, the study does have its limitations. To enhance the model, incorporating additional variables or exploring new datasets could be beneficial. A major challenge lies in managing the 'Unknown' categories within Demographic Information, which is essential for improving the study's accuracy and relevance. In our modeling configuration, we have removed all such values from the dataset.
 
@@ -536,7 +534,7 @@ The below the graph establishes one of the outputs of the model that Males are m
 vif(model_logi)
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 roc_plot = roc(df_logi$crime_type, fitted(model_logi))
 
 # basic ROC plot
@@ -572,6 +570,8 @@ plot_logi <- df_logi %>%
 plot_logi
 ```
 
+`Note` Model Diagnostic Plots are present in Appendix
+
 ```{r}
 names(df_logi)
 ```
@@ -596,6 +596,10 @@ The Logistic Regression model was fit on the selected columns as mentioned earli
 +-------------------+----------------+---------------------------+----------------------------+-------------+
 | Area: Southwest   | 0.8898         | 0.8769                    | 0.9029                     | 0.00E+00    |
 +-------------------+----------------+---------------------------+----------------------------+-------------+
+
+`Note`: Full Model Coefficients are present in Appendix
+
+Interpretation of Coefficinets: the coefficinet estimates represent the percentage change expected in the number of crimes as compared to the reference level keeping all other variables constant. E.g. Controlling for other factors like Weekday and Area, the expected number of crimes increases by \~1% when the month is August as compared to January.
 
 With forward step wise selection and cross validation methods to improve model, the deviance measures goodness of fit, with a null deviance of 35064 and a residual deviance of 5204, indicating a substantial improvement in model fit, resulting in an AIC value of 15356 with 4 Fisher Scoring iterations.
 
@@ -630,8 +634,6 @@ df_daily <- df_pois %>%
   group_by(dt_weekday,dt_month,AREA.NAME)%>%
   summarise(count = n())
 ```
-
-We can skip the below part since we have a similar plot in the EDA section, moght help save space
 
 ```{r}
 #| fig-width: 5.5
@@ -753,3 +755,205 @@ Our analysis of Los Angeles crime data using Logistic and Poisson regression mod
 The Poisson model, on the other hand, highlights temporal and spatial variations in crime patterns. Weekdays and certain months exhibit distinct crime trends, and geographical disparities in crime rates across police areas offer valuable insights for targeted law enforcement efforts. However, issues with model assumptions and over-dispersion necessitate consideration of alternative models like negative binomial regression in future studies.
 
 These findings, while insightful, must be viewed in the context of the study's limitations. The challenge of managing 'Unknown' categories in demographic data, potential model misspecification, and the need for more comprehensive variables are areas for future improvement. This study's endeavor to understand and predict crime patterns in Los Angeles aligns with our initial motivation to aid public safety strategies and crime prevention. Moving forward, enhancing model accuracy and incorporating broader datasets could provide deeper insights into the dynamics of crime, ultimately contributing to more effective public safety planning and community welfare.
+
+# References
+
+-   Los Angeles Police Department. (2023). Crime data from 2020 to present. City of Los Angeles. Retrieved from <https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8>
+
+\newpage
+
+# Appendix
+
+Mapping for Victim Descent Code to Victim Descent:
+
+| Victim Descent Code |         Victim Descent          |
+|:-------------------:|:-------------------------------:|
+|          A          |           Other Asian           |
+|          B          |              Black              |
+|          C          |             Chinese             |
+|          D          |            Cambodian            |
+|          F          |             Filipino            |
+|          G          |            Guamanian            |
+|          H          |      Hispanic/Latin/Mexican     |
+|          I          |  American Indian/Alaskan Native |
+|          J          |             Japanese            |
+|          K          |              Korean             |
+|          L          |             Laotian             |
+|          O          |              Other              |
+|          P          |         Pacific Islander        |
+|          S          |              Samoan             |
+|          U          |             Hawaiian            |
+|          V          |            Vietnamese           |
+|          W          |              White              |
+|          X          |             Unknown             |
+|          Z          |           Asian Indian          |
+
+Mapping for Victim Sex Code to Victim Sex:
+
+| Victim Descent Code | Victim Descent |
+|:-------------------:|:--------------:|
+|          M          |      Male      |
+|          F          |     Female     |
+|          X          | Unknown/Other  |
+
+Logistic Regression Model Coefficients Full:
+
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+|                                                    | **Coefficient\ | **Standard Errors** | **p-values**    | **Confidence Interval**\ |
+|                                                    | Estimates**    |                     |                 | (2.5%, 97.5%)            |
++:==================================================:+:==============:+:===================:+:===============:+:========================:+
+| **(Intercept)**                                    | 1.1932         | 1.798e-02           | \< 2e-16 \*\*\* | (1.1519, 1.2361)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Time hours occurred**                            | 1.0159         | 3.704e-04           | \< 2e-16 \*\*\* | (1.0151, 1.0166)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Age**                                     | 0.9965         | 1.513e-04           | \< 2e-16 \*\*\* | (0.9962, 0.9968)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: Male**                               | 1.8827         | 5.271e-03           | \< 2e-16 \*\*\* | (1.8634, 1.9023)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Sex: Unknown**                            | 3.4659         | 2.507e-02           | \< 2e-16 \*\*\* | (3.2995, 3.6402)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Black**                          | 0.7144         | 1.693e-02           | \< 2e-16 \*\*\* | (0.6910, 0.7385)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Chinese**                        | 1.6801         | 4.516e-02           | \< 2e-16 \*\*\* | (1.5385, 1.8365)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Cambodian**                      | 1.4699         | 3.002e-01           | 0.1994          | (0.8321, 2.7216)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Filipino**                       | 1.1828         | 4.074e-02           | 3.78e-05 \*\*\* | (1.0922, 1.2814)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Guamanian**                      | 1.0696         | 2.884e-01           | 0.8156          | (0.6120, 1.9082)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Hispanic/Latin/Mexican**         | 0.6354         | 1.635e-02           | \< 2e-16 \*\*\* | (0.6154, 0.6561)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: American Indian/Alaskan Native** | 1.0689         | 7.907e-02           | 0.3992          | (0.9164, 1.2495)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Japanese**                       | 1.7731         | 7.185e-02           | 1.56e-15 \*\*\* | (1.5423, 2.0443)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Korean**                         | 1.1302         | 3.635e-02           | 0.0008 \*\*     | (1.0526, 1.2138)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Laotian**                        | 0.5307         | 2.953e-01           | 0.0319 \*       | (0.2944, 0.9438)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Other**                          | 0.7804         | 1.782e-02           | \< 2e-16 \*\*\* | (0.7536, 0.8082)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Pacific Islander**               | 1.0433         | 1.446e-01           | 0.7694          | (0.7880, 1.3899)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Samoan**                         | 0.6829         | 3.072e-01           | 0.2145          | (0.3733, 1.2552)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Hawaiian**                       | 1.4184         | 1.759e-01           | 0.0469 \*       | (1.0120, 2.0197)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Vietnamese**                     | 1.9475         | 8.509e-02           | 4.75e-15 \*\*\* | (1.6518, 2.3062)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: White**                          | 0.8616         | 1.659e-02           | \< 2e-16 \*\*\* | (0.8340, 0.8900)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Unknown**                        | 1.0460         | 2.853e-02           | 0.1153          | (0.9891, 1.1062)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Victim Descent: Asian Indian**                   | 1.8502         | 1.209e-01           | 3.61e-07 \*\*\* | (1.4663, 2.3569)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Distance to precinct**                           | 0.9998         | 5.826e-06           | \< 2e-16 \*\*\* | (0.9998, 0.9999)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+| **Weapoon: Used**                                  | 0.5995         | 5.269e-03           | \< 2e-16 \*\*\* | (0.5933, 0.6057)         |
++----------------------------------------------------+----------------+---------------------+-----------------+--------------------------+
+
+Logistic Regression ROC-AUC Curve:
+
+```{r, output = TRUE, warning=FALSE, message=FALSE}
+roc_plot = roc(factor(df_logi$crime_type), fitted(model_logi))
+
+# basic ROC plot
+plot(roc_plot, main = "ROC Curve")
+
+# calculate threshold
+coords <- coords(roc_plot, "best")
+
+# add  threshold and AOC value
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("Threshold:", round(coords$threshold,3)), pos = 4, cex = 0.8)
+text(x = coords$specificity, y = coords$sensitivity, labels = paste("AUC:", round(auc(roc_plot), 2)), pos = 2, cex = 0.8)
+```
+
+Logistic Regression Predicted Probabilities for observations:
+
+```{r, output = TRUE}
+plot(df_logi$predprobs, xlab = "Observations", ylab = "Predicted Probability", main = "Predicted Probabilities")
+```
+
+Poisson Regression Model Coefficients Full:
+
++--------------------+----------------+---------------------------+----------------------------+----------+
+|                    | **Coefficient\ | 2.50% Confidence Interval | 97.50% Confidence Interval | P Values |
+|                    | Estimates**    |                           |                            |          |
++====================+================+===========================+============================+==========+
+| (Intercept)        | 663.6024       | 655.4907                  | 671.7956                   | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Monday    | 1.0563         | 1.0491                    | 1.0635                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Tuesday   | 1.0155         | 1.0085                    | 1.0225                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Wednesday | 0.9843         | 0.9776                    | 0.9911                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Thursday  | 0.9729         | 0.9663                    | 0.9795                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Friday    | 0.9846         | 0.9778                    | 0.9915                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Weekday: Saturday  | 0.9705         | 0.9638                    | 0.9773                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 02          | 0.9399         | 0.9283                    | 0.9517                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 03          | 0.9715         | 0.9599                    | 0.9832                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 04          | 0.9515         | 0.9404                    | 0.9628                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 05          | 0.9971         | 0.9852                    | 1.0092                     | 6.40E-01 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 06          | 0.9868         | 0.9752                    | 0.9987                     | 2.94E-02 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 07          | 1.0335         | 1.0214                    | 1.0457                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 08          | 1.0163         | 1.0046                    | 1.0281                     | 6.20E-03 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 09          | 0.7242         | 0.715                     | 0.7335                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 10          | 0.768          | 0.7581                    | 0.778                      | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 11          | 0.7217         | 0.7125                    | 0.7309                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Month: 12          | 0.7238         | 0.714                     | 0.7336                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Central      | 1.0655         | 1.0509                    | 1.0803                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Devonshire   | 0.6458         | 0.6357                    | 0.6561                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Foothill     | 0.5268         | 0.518                     | 0.5356                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Harbor       | 0.6578         | 0.6474                    | 0.6683                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Hollenbeck   | 0.5846         | 0.5749                    | 0.5944                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Hollywood    | 0.8362         | 0.8236                    | 0.8491                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Mission      | 0.6311         | 0.621                     | 0.6413                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: N Hollywood  | 0.7796         | 0.7681                    | 0.7914                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Newton       | 0.7854         | 0.7736                    | 0.7974                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Northeast    | 0.6819         | 0.6711                    | 0.6928                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Olympic      | 0.7951         | 0.7828                    | 0.8075                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Pacific      | 0.9285         | 0.9153                    | 0.9419                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Rampart      | 0.7423         | 0.731                     | 0.7538                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Southeast    | 0.8072         | 0.7954                    | 0.8193                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Southwest    | 0.8898         | 0.8769                    | 0.9029                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Topanga      | 0.6326         | 0.6224                    | 0.6429                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Van Nuys     | 0.6688         | 0.6583                    | 0.6793                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: West LA      | 0.7223         | 0.7108                    | 0.734                      | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: West Valley  | 0.6547         | 0.6443                    | 0.6654                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
+| Area: Wilshire     | 0.7505         | 0.7395                    | 0.7617                     | 0.00E+00 |
++--------------------+----------------+---------------------------+----------------------------+----------+
