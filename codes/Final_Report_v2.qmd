@@ -1,5 +1,5 @@
 ---
-title: "Los Angeles Crime Analysis"
+title: "Deciphering Crime Dynamics in Los Angeles"
 author: "Group 13: Meixiang(md480), Revanth(rg361), Suim(sp699), Titus(tra29)"
 format: pdf
 editor: visual
@@ -141,23 +141,28 @@ Since the Dataset is dynamic in nature and updated on a weekly basis, a fixed sn
 
 ## 3.1 Data Cleaning & EDA
 
-The following cleaning and processing steps were performed on the data before it was used for the analysis and modelling:
+The following cleaning and processing steps were performed on the data before it was used for the analysis and modeling:
 
 1.  Distance to precinct: using the Latitude (LAT) and Longitude (LON) columns from the dataset and publicly available co-ordinates of the precincts in Los Angeles we calculated the distance between the spot of crime occurrence and the precinct it was reported in, to understand if there was a relationship between the distance and the seriousness of crime.
-2.  Data Type Conversion: Columns were converted to their relevant Datatypes e.g: Conversion of Date related columns to Datetime, Victim Sex, Gender as Factors etc.
-3.  Bucketing: Columns like Time of crime occurrence were bucketed in order to decrease the number of unique levels and avoid over-fitting
-4.  Imputation: Empty values (systemic) in certain columns of interest like Victim Gender and Ethnicity were filled or combined with place holder values (e.g. "X") so that they can be used for analysis and modelling
-5.  Time Restriction: Since the data is dynamic in nature and the most recent crimes may not be reported yet, the time-frame for analysis was restricted and we considered only data up to **31-Aug-2023** so that there is no skewing of the results
-6.  Helper Columns: New columns such as number of days between crime occurrence and reporting, Month, Weekday etc. were calculated from the columns present in the dataset.
 
-Post the restrcition of the Time-frame for analysis, The number of observations reduced to **794,388**, a reduction of **21,494** (\~2.5%) observations.
+2.  Data Type Conversion: Columns were converted to their relevant Datatypes e.g: Conversion of Date related columns to Datetime, Victim Sex, Gender as Factors etc.
+
+3.  Bucketing: Columns like Time of crime occurrence were bucketed in order to decrease the number of unique levels and avoid over-fitting
+
+4.  Imputation: Empty values (systemic) in certain columns of interest like Victim Gender and Ethnicity were filled or combined with place holder values (e.g. "X") so that they can be used for analysis and modeling
+
+5.  Time Restriction: Since the data is dynamic in nature and the most recent crimes may not be reported yet, the time-frame for analysis was restricted and we considered only data up to **31-Aug-2023** so that there is no skewing of the results
+
+6.  Helper Columns: New columns such as number of days between crime occurrence and reporting, Month, Weekday etc. were calculated from the columns present in the dataset.
 
 Exploratory Data Analysis (EDA) was performed to understand the trends and relationship between the crime occurrences and the following factors:
 
-1.  Temporal: Time of occurrence, weekday, month
-2.  Precinct: Number of crimes reported, distance to precinct
+1.  Temporal: Time of occurrence, Weekday, Month
+2.  Precinct: Number of crimes reported, Distance to precinct
 3.  Victim Demographic: Age, Ethnicity, Gender
-4.  General: proportion of crime types, daily rate
+4.  General: Proportion of crime types, Daily rate
+
+We additionally conducted checks for missing values, particularly in the columns of interest recognizing that missing data could introduce bias or affect the models' robustness. Wherever the missing data was systematic or substantial, they were handled appropriately.
 
 ## 3.2 Research Question 1
 
@@ -167,11 +172,9 @@ The **binary** outcome variable "crime type" was created by converting the "Part
 
 **Logistic Regression** was chosen for this analysis since it is well-suited for binary outcomes such as 'serious' and 'non-serious'. Logistic regression is also particularly effective for inference since the output is easily interpretable, allowing us to identify factors that influence the seriousness of crimes committed.
 
-Prior to model construction, it was essential to eliminate rows with blank values or "-" for two specific variables: victim sex and victim descent. These missing values were impractical to impute and were combined with the "X"-unknown category from the dataset. for Victim sex, the type "H" was excluded from the analysis since it had very few (88) observations comparatively.
-
 In our a priori selection, factors like time of occurrence, distance to the precinct, demographic information (gender, age, descent), and weapon usage were included, hypothesizing that these significantly influence crime seriousness. We also explored the interaction term with sex and descent, based on the hypothesis that specific genders and descents might be interrelated. However, the model with the interaction term did not yield statistically significant results, leading to its removal from the final model. Additionally, several assessment methods were considered for fitting the model to the dataset.
 
-Firstly, regarding collinearity, we chose to use the Variance Inflation Factor (VIF) to assess collinearity within the model. We also employed deviance and the Akaike Information Criterion (AIC) to find the most fitting model by comparing two alternative models, excluding victim sex and descent. Based on the relationship between crime seriousness and 1, we evaluated the model's fit using McFadden's pseudo R^2^ value. Additionally, we assessed the model using the ROC curve and confusion matrix through prediction methods. These approaches helped us determine the extent to which the model fits the dataset and its effectiveness in addressing the research question.
+Firstly, regarding collinearity, we chose to use the Variance Inflation Factor (VIF) to assess collinearity within the model. We also employed deviance and the Akaike Information Criterion (AIC) to find the most fitting model by comparing two alternative models, excluding victim sex and descent. We evaluated the model's fit using McFadden's pseudo R^2^ value. Additionally, we assessed the model using the ROC curve and confusion matrix through prediction methods. These approaches helped us determine the extent to which the model fits the dataset and its effectiveness in addressing the research question.
 
 ## 3.3 Research Question 2
 
@@ -187,13 +190,15 @@ Given the prediction nature, we've narrowed down our model to the following vari
 
 -   Outcome Variable: Count of crimes at the predictor variable level
 
-To refine and optimize the model, **cross-validation** and **stepwise forward** selection was used
+To refine and optimize the model, **cross-validation** and **stepwise forward** selection was used.
 
-To assess model fit, the data was split into Train and Test and the model was used to predict the number of crimes on Test dataset, metrics such as RMSE and R^2^ were studied to evaluate the performance of the model
+To assess model fit, the data was split into Train and Test and the model was used to predict the number of crimes on Test dataset, metrics such as RMSE and R^2^ were studied to evaluate the performance of the model.
 
 # 4. Results
 
-## 4.1 Exploratory Data Analysis
+## 4.1 Data Cleaning & EDA
+
+Post the restriction of the Time-frame for analysis, The number of observations reduced to **794,388**, a reduction of **21,494** (\~2.5%) observations.
 
 The following observations were made during the EDA process.
 
@@ -232,7 +237,7 @@ plot_day_avg <- ggplot(data = daily_crime_count, aes(x = DATE.OCC, y = Count)) +
         axis.title.y = element_text(size=12))
 ```
 
-```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+```{r, output = TRUE, fig.height=3, fig.width=7}
 grid.arrange(plot_type,plot_day_avg)
 ```
 
@@ -257,7 +262,7 @@ q3 <- filter(df, dt_year != 2023) %>%
   theme(legend.position="none")
 ```
 
-```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+```{r, output = TRUE, fig.height=3, fig.width=7}
 # Adjust the plot margins
 margin_adjustment <- theme(plot.margin = margin(5, 5, 5, 5, "pt"))
 q1 <- q1 + margin_adjustment
@@ -277,9 +282,9 @@ grid.arrange(q3, q2, q1, layout_matrix = layout_matrix,
              top="Crime Distribution by Month, Weekday, and Time of Day")
 ```
 
-There is a minor variation in the proportion and count of crimes at different precincts.
+There is a minor variation in the proportion and count of crimes at different precincts, the crime rate initially increases with the increase in distance from the precinct and then decreases.
 
-```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+```{r, output = TRUE,  fig.height=3, fig.width=7}
 # First plot
 p1 <- ggplot(df, aes(x = AREA.NAME, fill = crime_type)) +
   geom_bar(position = "dodge", alpha = 0.7) +
@@ -298,7 +303,7 @@ grid.arrange(p1, p2, ncol = 1, top = "Crime Count and Distance to Precinct")
 
 The victim demographic data - 'Age', 'Sex' and 'Descent' have a large number of missing values(systematic). There is a clear observable variation of the number and proportion of the type of crimes with respect to these variables. (Refer to Appendix for Meaning of Letter Codes)
 
-```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+```{r, output = TRUE,  fig.height=3, fig.width=7}
 # Assign plots to variables
 p1 <- ggplot(df, aes(x = Vict.Age, fill = as.factor(crime_type))) +
   geom_histogram(binwidth = 10, position = "dodge", color = "black") +
@@ -347,6 +352,8 @@ grid.arrange(p1, p2, p3, layout_matrix = layout_matrix_new,
 str(df)
 ```
 
+Prior to model construction, it was essential to eliminate rows with blank values or "-" for two specific variables: victim sex and victim descent. These missing values were impractical to impute and were combined with the "X"-unknown category from the dataset. for Victim sex, the type "H" was excluded from the Logistic Regrassion analysis since it had very few (88) observations comparatively.
+
 ```{r}
 #Creating a Clean Df only the columsn which will be used ahead
 
@@ -386,15 +393,17 @@ The Logistic Regression model was fit on the selected columns as mentioned earli
 
 `Note`: Full Model Coefficients are present in Appendix
 
-The coefficients above represent the odds of particular category or unit increase in value being a victim of serious crime as compared to the reference level for that category. E.g. A Male is 1.88 times more likely to be a victim of a serious crime as compared to a female.
+The coefficients indicate how the likelihood of being a victim of a serious crime changes with each category or unit increase in a given variable, relative to a baseline category. For instance, being male increases the odds of being a victim of a serious crime by 1.88 times compared to being female.
 
-The model was compared with other models and null-model to study interactions and asses the model.
+The model was compared with other models and null-model to study interactions and assess the model.
 
-The goodness of fit was indicated by a null deviance of 980739.3, leading to a significant model improvement with an **AIC** of 980789.3. However, the McFadden's pseudo R^2^ value of 0.09004, though low, suggests limited explanatory power.
+The goodness of fit was indicated by a null deviance of 980739.3, leading to a significant model improvement with an **AIC** of 980789.3. However, the **McFadden's pseudo R^2^** value of 0.09004, though low, suggests limited explanatory power.
 
-The VIF score of most of the parameters was less than 3 and only the Victim Descent was above 10.
+The **VIF** score of most of the parameters was around 1 and only the Victim Descent and Sex was above 10, however we decided to keep both of them in the model since they describe different demographic characteristics.
 
-A confusion matrix was created and the following metrics were studied to evaluate the model:
+The model has a **AUC** value of 0.7 which indicates that the model has a decent ability to distinguish between classes, performing better than random chance. This value suggests that the model is moderately effective in predicting outcomes accurately.
+
+A confusion matrix was created and the following metrics were studied to evaluate the model, "1" indicates the positive class of serious crimes:
 
 ```{r}
 #creating dataframe for logistic regression
@@ -508,13 +517,13 @@ The following table briefly describes the results of the confusion matrix:
 
 |            Metric            |    **Value**     |
 |:----------------------------:|:----------------:|
-|         **Accuracy**         |      0.6187      |
-| **95% Confidence Intervals** | (0.6177, 0.6198) |
-|          **Kappa**           |      0.2611      |
-|       **Sensitivity**        |      0.5217      |
-|       **Specificity**        |      0.7558      |
+|         **Accuracy**         |      0.6194      |
+| **95% Confidence Intervals** | (0.6183, 0.6205) |
+|          **Kappa**           |      0.2614      |
+|       **Sensitivity**        |      0.5255      |
+|       **Specificity**        |      0.7520      |
 
-The model's accuracy was approximately 61.87%, not sufficiently high to be definitive. A Kappa value of 0.2611, while slightly better than chance, also indicates modest performance. Sensitivity and specificity are crucial in evaluating the model. Sensitivity (true positive rate) effectively identifies actual serious cases, while specificity (true negative rate) accurately identifies non-serious cases. These metrics collectively offer a comprehensive view of the model's ability to distinguish between serious and non-serious cases.
+The model's accuracy was approximately 61.9%, not sufficiently high to be definitive. A Kappa value of 0.2614, while slightly better than chance, also indicates modest performance. Sensitivity and specificity are crucial in evaluating the model. Sensitivity (true positive rate) effectively identifies actual serious cases, while specificity (true negative rate) accurately identifies non-serious cases. Our model is better at correctly identifying non-serious crimes than serious ones, as it accurately identifies non-serious crimes in about 76% of cases vs \~52% of correctly identifying the serious cases.These metrics collectively offer a comprehensive view of the model's ability to distinguish between serious and non-serious cases.
 
 The model's insights include:
 
@@ -528,7 +537,7 @@ The model's insights include:
 
 These results provide insights into the factors that influence the occurrence of serious crimes. While many variables show statistical significance, the study does have its limitations. To enhance the model, incorporating additional variables or exploring new datasets could be beneficial. A major challenge lies in managing the 'Unknown' categories within Demographic Information, which is essential for improving the study's accuracy and relevance. In our modeling configuration, we have removed all such values from the dataset.
 
-The below the graph establishes one of the outputs of the model that Males are more likely to be a viticm of violent crime as compared to females:
+The below the graph establishes one of the outputs of the model that Males are more likely to be a victim of violent crime as compared to females:
 
 ```{r}
 vif(model_logi)
@@ -553,7 +562,7 @@ df_logi$predprobs <- predict(model_logi, type = "response")
 plot(df_logi$predprobs, xlab = "Observations", ylab = "Predicted Probability", main = "Predicted Probabilities")
 ```
 
-```{r, output = TRUE, fig.align="center", fig.height=3, fig.width=7}
+```{r, output = TRUE, fig.height=3, fig.width=7}
 plot_logi <- df_logi %>% 
   count(Vict.Sex, crime_type) %>%
   group_by(Vict.Sex) %>%
@@ -571,10 +580,6 @@ plot_logi
 ```
 
 `Note` Model Diagnostic Plots are present in Appendix
-
-```{r}
-names(df_logi)
-```
 
 ## 4.3 Poisson Model Regression
 
@@ -599,7 +604,7 @@ The Logistic Regression model was fit on the selected columns as mentioned earli
 
 `Note`: Full Model Coefficients are present in Appendix
 
-Interpretation of Coefficinets: the coefficinet estimates represent the percentage change expected in the number of crimes as compared to the reference level keeping all other variables constant. E.g. Controlling for other factors like Weekday and Area, the expected number of crimes increases by \~1% when the month is August as compared to January.
+The coefficinet estimates represent the proportion in the number of crimes as compared to the reference level keeping all other variables constant. E.g. Controlling for other factors like Weekday and Area, the expected number of crimes increases by \~1% when the month is August as compared to January.
 
 With forward step wise selection and cross validation methods to improve model, the deviance measures goodness of fit, with a null deviance of 35064 and a residual deviance of 5204, indicating a substantial improvement in model fit, resulting in an AIC value of 15356 with 4 Fisher Scoring iterations.
 
@@ -607,10 +612,10 @@ The model was made to predict the count of crimes on the Test dataset and these 
 
 |  Metric   | **Value** |
 |:---------:|:---------:|
-|   RMSE    |   42.59   |
+|   RMSE    |   43.88   |
 | R-Squared |   0.82    |
 
-Our preliminary evaluation of the model's predictive accuracy, gauged through the RMSE, yielded a value of 42.59 to estimate the average difference between the predicted and observed crime counts. Additionally, the R-squared value of 0.82 reflected a strong linear relationship between the observed and predicted crime counts, explaining a substantial proportion of the variance in the crime data.
+Our preliminary evaluation of the model's predictive accuracy, gauged through the RMSE, yielded a value of 43.88 to estimate the average difference between the predicted and observed crime counts, in comparison to the average crime count \~450 in the Test dataset indicates that the model is effective in predicting the number of crimes. Additionally, the R-squared value of 0.82 reflects a strong linear relationship between the observed and predicted crime counts, explaining a substantial proportion of the variance in the crime data.
 
 Preliminary examination of the model outputs suggests distinct spatial and temporal crime patterns.
 
@@ -620,9 +625,9 @@ Preliminary examination of the model outputs suggests distinct spatial and tempo
 
 -   **Area:** Crime rates differ by police area. Some areas have higher crime rates (e.g., "Southwest"), while others have lower rates (e.g., "Hollywood"). These variations are statistically significant, providing insights into local crime trends.
 
-However, with a dispersion value of 4.07, it indicates potential problems with the model assumptions, likely due to factors such as Population Heterogeneity and Model Misspecification. Zero-Inflation and Correlation Among Observations have been ruled out.
+However, with a dispersion value of 4.10, it indicates potential problems with the model assumptions, likely due to factors such as Population Heterogeneity and Model Misspecification. Zero-Inflation and Correlation Among Observations have been ruled out.
 
-Plot the predictions alongside observed counts, depicts the pattern of the number of crime varies from month to month weekday and weekends.
+The plot below shows the relationship between the Crime counts and Temporal factors:
 
 ```{r}
 df_pois <- df2[,names(df2) %in% c("AREA.NAME", "dt_weekday","dt_month") ]
